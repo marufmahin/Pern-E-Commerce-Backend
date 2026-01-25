@@ -1,0 +1,191 @@
+import { prisma } from "../database/prisma.js";
+import { z } from "zod";
+
+export const getAllProduct = async (req, res) => {
+
+    const products = await prisma.product.findMany()
+
+    res.json({
+        status:'success',
+        message: 'Products fetched Successfully',
+         data: {products} 
+    })
+}
+
+
+export const getAProduct = async (req, res) => {
+
+    const productId = req.params.id;
+
+    const productGetSchema = z.object({
+        id: z.uuid(),
+    });
+
+    const {success,data,error} = productGetSchema.safeParse({
+        id: productId,
+    });
+
+    if (!success) {
+        res.status(400).json({
+            status: 'error',
+            message: 'Bad Request',
+        });       
+    }
+
+    const product = await prisma.product.findUnique({
+        where: {
+            id: productId
+        }
+    });
+
+    if (!product) {
+        return res.status(404).json({
+            status: 'error',
+            message: 'Product not found',
+        });
+    }
+
+    res.json({
+        status: 'success',
+        message: 'Product fetched successfully',
+        data: { product }
+    })
+
+}
+
+export const createProduct = async (req, res) =>{
+  const productCreateSchema = z.object({
+    name: z.string().min(3),
+    description: z.string().min(5),
+    price: z.number().positive(),
+    stock: z.number().int(),
+    categoryId: z.uuid()
+  })
+
+  const { success, data, error } = productCreateSchema.safeParse(req.body);
+
+  // validation failed 
+  if (!success){
+    res.status(400).json({
+      status: 'error',
+      message: 'Bad request payload should have name, description, price, stock and categoryId',
+    })
+  }
+
+  // check if valid category
+  const category = await prisma.category.findUnique({
+    where: { id: data.categoryId }
+  })
+
+  if(!category){
+    res.json({
+      status: 'error',
+      message: 'Bad request'
+    })
+  }
+
+  const productPayload = {
+    name: data.name,
+    description: data.description,
+    price: data.price,
+    stock: data.stock,
+    categoryId: data.categoryId
+  }
+
+  const createdProduct = await prisma.product.create({
+    data: productPayload
+  })
+
+  res.json({
+    status: 'success',
+    message: 'Product Created Successfully',
+    data: {product: createdProduct}
+  })
+
+}
+
+export const updateProduct = async (req, res) => {
+
+    const productId =  req.params.id;
+
+    const productSchema = z.object({
+        id: z.uuid()
+    });
+
+    const {success: paramSuccess, data: paramData, error: paramError} = productSchema.safeParse({
+        id: productId,
+    });
+
+    if (!paramSuccess) {
+        return res.status(400).json({
+            status: 'error',
+            message: 'Bad Request',
+        });
+    }
+
+    const productUpdateSchema = z.object({
+        name: z.string().min(3).optional(),
+        description: z.string().min(5).optional(),
+        price: z.number().positive().optional(),
+        stock: z.number().int().optional(),
+        categoryId: z.uuid().optional()
+    });
+
+    const {success:bodySuccess, data: bodyData, error: bodyError} = productUpdateSchema.safeParse(req.body);
+
+    //Validation failed
+    if (!bodySuccess) {
+        return res.status(400).json({
+            status: 'error',
+            message: 'Bad Request payload should have name, description, price, stock or categoryId',
+        });
+    }
+
+    const updatedProduct =  await prisma.product.update({
+        where: {
+            id: productId
+        },
+        data: bodyData
+    });
+
+    res.json({
+        status: 'success',
+        message: 'Product Updated Successfully',
+        data: { product: updatedProduct }
+    });
+
+}
+
+export const deleteProduct = async (req, res) => {
+
+    const productId = req.params.id;
+
+    const productSchema = z.object({
+        id: z.uuid(),
+    });
+
+    const {success,data,error} = productSchema.safeParse({
+        id: productId,
+    });
+
+    if (!success) {
+        res.status(400).json({
+            status: 'error',
+            message: 'Bad Request',
+        });       
+    }
+
+    const deleteProduct = await prisma.product.delete({
+        where: {
+            id: productId
+        }
+    });
+
+    res.json({
+        status: 'success',
+        message: 'Product Deleted Successfully',
+        data: { product: deleteProduct }
+    })
+
+
+}
