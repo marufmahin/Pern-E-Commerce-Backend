@@ -52,7 +52,6 @@ export const addItemToCart = async (req, res) => {
     quantity,
   });
 
-  console.log("I am here");
 
   if (!success) {
     return res.status(400).json({
@@ -148,9 +147,72 @@ export const addItemToCart = async (req, res) => {
   });
 };
 
+
 export const updateCartItem = async (req, res) => {
-  
-  res.send("Update cart item");
+  const itemId = req.params.id;
+  const userId = req.user.id;
+  const { quantity } = req.body;
+
+  const updateSchema = z.object({
+    itemId: z.uuid(),
+    quantity: z.number().int().min(1),
+  });
+
+  const { success, error } = updateSchema.safeParse({ itemId, quantity });
+
+  if (!success) {
+    return res.status(400).json({
+      status: "Error",
+      message: "Invalid input data",
+      error: error.errors,
+    });
+  }
+
+  const cart = await prisma.cart.findFirst({
+    where: {
+      userId: userId,
+    },
+  });
+
+  if (!cart) {
+    return res.status(404).json({
+      status: "Error",
+      message: "Cart not found",
+    });
+  }
+
+  const cartItem = await prisma.cartItem.findFirst({
+    where: {
+      id: itemId,
+      cartId: cart.id,
+    },
+  });
+
+  if (!cartItem) {
+    return res.status(404).json({
+      status: "Error",
+      message: "Cart item not found",
+    });
+  }
+
+  const updatedCartItem = await prisma.cartItem.update({
+    where: {
+      id: itemId,
+    },
+    data: {
+      quantity: quantity,
+    },
+    include: {
+      product: true,
+      variant: true,
+    },
+  });
+
+  res.json({
+    status: "Success",
+    message: "Cart item updated successfully",
+    data: updatedCartItem,
+  });
 };
 
 export const removeItemFromCart = async (req, res) => {

@@ -114,10 +114,72 @@ export const createImage = async (req, res) => {
  
 }
 
-export const deleteImage = async (req, res) => {
-    res.json({ message: "Delete Image Endpoint" });
-}
-
 export const updateImage = async (req, res) => {
-    res.json({ message: "Update Image Endpoint" });
-}
+  const imageId = req.params.id;
+
+  const imageSchema = z.object({
+    id: z.uuid(),
+  });
+
+  const {
+    success: paramSuccess,
+    data: paramData,
+    error: paramError,
+  } = imageSchema.safeParse({ id: imageId });
+
+  if (!paramSuccess) {
+    return res.status(400).json({
+      status: "error",
+      message: "Bad request: Invalid UUID format",
+    });
+  }
+  const updateSchema = z.object({
+    imageUrl: z.url().optional(),
+    altText: z.string().max(255).optional(),
+    displayOrder: z.number().int().nonnegative().optional(),
+    isPrimary: z.boolean().optional(),
+  });
+  const {
+    success: bodySuccess,
+    data: bodyData,
+    error: bodyError,
+  } = updateSchema.safeParse(req.body);
+  if (!bodySuccess) {
+    return res.status(400).json({
+      status: "error",
+      message: "Bad request payload",
+    });
+  }
+  const updatedImage = await prisma.productImages.update({
+    where: { id: imageId },
+    data: bodyData,
+  });
+  res.json({
+    status: "success",
+    message: "Product image updated successfully",
+    data: updatedImage,
+  });
+};
+
+export const deleteImage = async (req, res) => {
+  const imageId = req.params.id;
+  const imageSchema = z.object({
+    id: z.uuid(),
+  });
+  const { success, data, error } = imageSchema.safeParse({ id: imageId });
+
+  if (!success) {
+    return res.status(400).json({
+      status: "error",
+      message: "Bad request: Invalid UUID format",
+    });
+  }
+  const deletedImage = await prisma.productImages.delete({
+    where: { id: imageId },
+  });
+  res.json({
+    status: "success",
+    message: "Product image deleted successfully",
+    data: deletedImage,
+  });
+};
