@@ -53,37 +53,46 @@ export const getACategory = async (req, res) => {
 
 }
 
-export const createCategory = async (req, res) => {
+export const createCategory = async (req, res) =>{
+  const { name, slug, description, imageUrl, parentId } = req.body;
 
-    const categoryCreateSchema = z.object({
-        name: z.string().min(3),
-        description: z.string().min(5),
+
+  const categoryCreateSchema = z.object({
+    name: z.string().min(3),
+    slug: z.string().min(3),
+    description: z.string().min(5),
+    imageUrl: z.url(),
+    parentId: z.uuid().optional()
+  })
+
+  const { success, data, error } = categoryCreateSchema.safeParse(req.body);
+
+  // validation failed 
+  if (!success){
+    res.status(400).json({
+      status: 'error',
+      message: 'Bad request payload must have name, slug, description, imageUrl, and optionally parentId',
     })
-    const { success, data, error } = categoryCreateSchema.safeParse(req.body);
+  }
 
-    //validation failed
-    if (!success) {
-        return res.status(400).json({
-            status: 'error',
-            message: 'Bad Request',
-        });
-    }
-    
-    const categoryPayload = {
-        name: data.name,
-        description: data.description,
-    };
+  const categoryPayload = {
+    name: data.name,
+    slug: data.slug,
+    description: data.description,
+    imageUrl: data.imageUrl,
+    parentId: data.parentId
+  }
 
-    const createdCategory = await prisma.category.create({
-        data: categoryPayload
-    });
+  const createdCategory = await prisma.category.create({
+    data: categoryPayload
+  })
 
-    res.json({
-        status: 'success',
-        message: 'Category Created Successfully',
-        data: { category: createdCategory }
-    });
-    
+  res.json({
+    status: 'success',
+    message: 'Category created Successfully',
+    data: { category: createdCategory }
+  })
+
 }
 
 export const updateCategory = async (req, res) => {

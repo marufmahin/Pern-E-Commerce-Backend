@@ -2,7 +2,7 @@ import express from 'express';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import categoryRoutes from './routes/categoryRoute.js';
-import productRoutes from './routes/productRoute.js';
+import productRoute from './routes/products/index.js';
 
 const app = express();
 app.use( express.json() );
@@ -10,7 +10,9 @@ app.use( express.json() );
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/category', categoryRoutes);
-app.use('/product', productRoutes);
+app.use('/product', productRoute);
+
+
 
 app.get('/', (req, res) => {
     res.send('Server is ready');
