@@ -10,8 +10,13 @@ export const getCart = async (req, res) => {
     where: {
       userId: userId,
     },
-    include: {
-      cartItems: true,
+     include: {
+      cartItems: {
+        include: {
+          product: true,
+          variant: true,
+        },
+      },
     },
   });
 
